@@ -215,7 +215,7 @@ func bindByTypeWithReturn(cfg Config, field Field, fieldMap map[string]any) (err
 	case FieldTypeGeoPoint:
 		err = bindGeoPointWithReturn(field, fieldMap)
 	default:
-		err = bindWordNWithReturn(field, 25, fieldMap)
+		err = bindWordNWithReturn(fieldCfg, field, fieldMap)
 	}
 
 	return
@@ -331,8 +331,10 @@ func genNounsNWithReturn(n int) string {
 	}
 
 	// randomdata.Adjective() + randomdata.Noun() -> 364 * 527 (~190k) different values
-	value += randomdata.Adjective()
-	value += randomdata.Noun()
+	value += randomdata.Adjective() + " "
+	value += randomdata.Noun() + " "
+	value += randomdata.IpV4Address() + " "
+	value += randomdata.MacAddress()
 
 	return value
 }
@@ -922,10 +924,18 @@ func bindGeoPointWithReturn(field Field, fieldMap map[string]any) error {
 	return nil
 }
 
-func bindWordNWithReturn(field Field, n int, fieldMap map[string]any) error {
+func bindWordNWithReturn(fieldCfg ConfigField, field Field, fieldMap map[string]any) error {
 	var emitF emitF
+	min, err := fieldCfg.Range.MinAsInt64()
+	if err != nil {
+		min = 25
+	}
+	max, err := fieldCfg.Range.MaxAsInt64()
+	if err != nil {
+		max = 30
+	}
 	emitF = func(state *genState) any {
-		return genNounsNWithReturn(customRand.Intn(n))
+		return genNounsNWithReturn(customRand.Intn(int(max)) + int(min))
 	}
 	fieldMap[field.Name] = emitF
 	return nil
